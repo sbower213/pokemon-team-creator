@@ -1,0 +1,29 @@
+{
+  "name": "pokemon-team-creator",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+	"start": "node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "angular": "^1.6.4",
+    "body-parser": "^1.17.1",
+    "dotenv": "^4.0.0",
+    "express": "^4.15.2",
+    "express-handlebars": "^3.0.0",
+    "http": "0.0.0",
+    "mongoose": "^4.9.1",
+    "morgan": "^1.8.1",
+    "oakdex-pokedex": "^0.1.2",
+    "oakdex-pokedex-sprites": "0.0.1",
+    "request": "^2.81.0",
+    "select2": "^4.0.3",
+    "socket.io": "^1.7.3",
+    "underscore": "^1.8.3"
+  }
+}

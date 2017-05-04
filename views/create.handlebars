@@ -1,0 +1,575 @@
+<div id="teamsContainer" class="container">
+	<script>
+		
+		var items = [];
+		// find a way to filter these by the isNonstandard value?
+		{{#each items}}
+			items.push('{{this.name}}');
+		{{/each}}
+		
+		var natures = [];
+		{{#each natures}}
+			natures.push({'name':'{{this.name}}','summary':'{{this.summary}}'});
+		{{/each}}
+		
+		var pokemonList = [];
+		{{#each pokemonList}}
+			pokemonList.push({'id':'{{this}}','text':'{{this}}'});
+		{{/each}}
+		
+		var teamReference = {
+			'pokemon1':null,
+			'pokemon2':null,
+			'pokemon3':null,
+			'pokemon4':null,
+			'pokemon5':null,
+			'pokemon6':null
+		};
+		var team = {
+			teamName:'',
+			{{#each numbers}}
+				'pokemon{{this}}':{
+					name: null,
+					item: null,
+					ability: null,
+					nature: null,
+					moves: ['','','',''],
+					IVs: [31,31,31,31,31,31],
+					EVs: [0,0,0,0,0,0]
+				},
+			{{/each}}
+		}
+		
+		var activePokemon = null;
+		
+		var socket = io();
+		
+	</script>
+	
+	<div class="team">
+		<input id="teamName" class="form-control" type="text" name="teamName" placeholder="Team Name" />
+		<br/><br/>
+		{{#each numbers}}
+			<div class="imageDiv">
+				<img class="pokeImg" id="pokemon{{this}}Img" src="">
+				<input id="pokemon{{this}}Name" type="text" name="pokemon{{this}}[name]" />
+			</div>
+			<script>
+			
+			$('#pokemon{{this}}Img').on({
+				'click': function(){
+				
+					if(activePokemon != null){
+						$('#activePokemon').trigger('submit');
+					}
+				
+					var key = $(this).attr('id');
+					key = key.substring(0, key.length-3); //see the position in the team
+					
+					$('#currentKey').val(key);
+					var name = $(this).val();
+					
+					//now fill out fields based on what's already in the team variable
+					$('#activePokemonImg').attr('src', '/sprites/'+teamReference[key].national_id+'.png');
+					$('#activeType1').attr('src', '/sprites/types/'+teamReference[key].types[0]+'IC.gif');
+					if(teamReference[key].types.length == 2)
+						$('#activeType2').attr('src', '/sprites/types/'+teamReference[key].types[1]+'IC.gif');
+					else
+						$('#activeType2').removeAttr('src');
+				
+					activePokemon = team[key];
+						
+					//ok now update possible moves and abilities
+					$('#ability').empty();
+					$('#move0').empty();
+					$('#move1').empty();
+					$('#move2').empty();
+					$('#move3').empty();
+					$('#nature').empty();
+					$('#item').empty();
+					
+					$('#ability').select2({
+						placeholder: "Ability"
+					});
+					var abilityOptions = $('#ability');
+					$.each(teamReference[key].abilities, function(){
+						abilityOptions.append($('<option />').val(this.name).text(this.name));
+					});
+					
+					var moves = _.uniq(teamReference[key].learnset, function(x){
+						return x.move;
+					});
+					
+					moves = _.sortBy(moves, 'move');
+					
+					$('#move0').select2({
+						placeholder: "Move 1"
+					});
+					$('#move1').select2({
+						placeholder: "Move 2"
+					});
+					$('#move2').select2({
+						placeholder: "Move 3"
+					});
+					$('#move3').select2({
+						placeholder: "Move 4"
+					});
+					
+					
+					//set up all select values
+					var move0 = $('#move0');
+					$.each(moves, function(){
+						move0.append($('<option />').val(this.move).text(this.move));
+					});
+					var move1 = $('#move1');
+					$.each(moves, function(){
+						move1.append($('<option />').val(this.move).text(this.move));
+					});
+					var move2 = $('#move2');
+					$.each(moves, function(){
+						move2.append($('<option />').val(this.move).text(this.move));
+					});
+					var move3 = $('#move3');
+					$.each(moves, function(){
+						move3.append($('<option />').val(this.move).text(this.move));
+					});
+					
+					
+					$('#item').select2({
+						placeholder: "Item"
+					});
+					var itemSelect = $('#item');
+					
+					$.each(items, function(){
+						itemSelect.append($('<option />').val(this).text(this));
+					});
+					
+					$('#nature').select2({
+						placeholder: "Nature"
+					});
+					var natureSelect = $('#nature');
+					
+					$.each(natures, function(){
+						natureSelect.append($('<option />').val(this.name).text(this.name+" "+this.summary));
+					});
+					
+					$('#activeName').html(activePokemon.name);
+					$('#item').val(activePokemon.item);
+					$('#ability').val(activePokemon.ability);
+					$('#nature').val(activePokemon.nature);
+					
+					$('#move0').val(activePokemon.moves[0]);
+					$('#move1').val(activePokemon.moves[1]);
+					$('#move2').val(activePokemon.moves[2]);
+					$('#move3').val(activePokemon.moves[3]);
+					
+					$('#evHP').val(activePokemon.EVs[0]);
+					$('#evAtk').val(activePokemon.EVs[1]);
+					$('#evDef').val(activePokemon.EVs[2]);
+					$('#evSpA').val(activePokemon.EVs[3]);
+					$('#evSpD').val(activePokemon.EVs[4]);
+					$('#evSpeed').val(activePokemon.EVs[5]);
+					
+					$('#ivHP').val(activePokemon.IVs[0]);
+					$('#ivAtk').val(activePokemon.IVs[1]);
+					$('#ivDef').val(activePokemon.IVs[2]);
+					$('#ivSpA').val(activePokemon.IVs[3]);
+					$('#ivSpD').val(activePokemon.IVs[4]);
+					$('#ivSpeed').val(activePokemon.IVs[5]);
+					
+				}
+			});
+			
+			$('#pokemon{{this}}Name').on({
+				'change': function(){
+				
+					$('#activeDiv').removeAttr('hidden');
+				
+					//oh hey maybe automatically save before switching pokemon
+					//but don't do it on the first pokemon entered
+					if(activePokemon != null){
+						$('#activePokemon').trigger('submit');
+					}
+				
+					var key = $(this).attr('id');
+					key = key.substring(0, key.length-4); //see the position in the team
+					
+					$('#currentKey').val(key);
+					var name = $(this).val();
+				
+					$.get('/pokemonByName/' + name, function(data) {
+					
+						console.log(data);
+					
+						if(Object.keys(data).length === 0 && data.constructor === Object){
+							$('#pokemon{{this}}Img').attr('src', '/sprites/0.png');
+							$('#activePokemonImg').attr('src', '/sprites/0.png');
+							
+							//disable fields in activePokemon form
+							$('#activeDiv').attr('hidden', 'true');
+							
+							return false;
+							
+						} else {
+							$('#pokemon{{this}}Img').attr('src', '/sprites/'+data.national_id+'.png');
+							$('#activePokemonImg').attr('src', '/sprites/'+data.national_id+'.png');
+							$('#activeType1').attr('src', '/sprites/types/'+data.types[0]+'IC.gif');
+							if(data.types.length == 2)
+								$('#activeType2').attr('src', '/sprites/types/'+data.types[1]+'IC.gif');
+							else
+								$('#activeType2').removeAttr('src');
+						}
+					
+						teamReference[key] = data;
+						
+						//make move entry stuff hidden until pokemon is picked?
+						//clear everything if pokemon changes
+						//use a select2 to reference team[key]? prepopulate that select field?
+						
+						activePokemon = team[key];
+						
+						//if they change which pokemon is in this slot, reset all fields
+						if(data.names.en != activePokemon.name){
+							activePokemon = {
+								name: null,
+								item: null,
+								ability: null,
+								nature: null,
+								moves: ['','','',''],
+								IVs: [31,31,31,31,31,31],
+								EVs: [0,0,0,0,0,0]
+							}
+							activePokemon.name = data.names.en
+						}
+						
+						console.log(activePokemon);
+						
+						//ok now update possible moves and abilities
+						$('#ability').empty();
+						$('#move0').empty();
+						$('#move1').empty();
+						$('#move2').empty();
+						$('#move3').empty();
+						$('#nature').empty();
+						$('#item').empty();
+						
+						$('#ability').select2({
+							placeholder: "Ability"
+						});
+						var abilityOptions = $('#ability');
+						$.each(teamReference[key].abilities, function(){
+							abilityOptions.append($('<option />').val(this.name).text(this.name));
+						});
+						
+						var moves = _.uniq(teamReference[key].learnset, function(x){
+							return x.move;
+						});
+						
+						moves = _.sortBy(moves, 'move');
+						
+						$('#move0').select2({
+							placeholder: "Move 1"
+						});
+						$('#move1').select2({
+							placeholder: "Move 2"
+						});
+						$('#move2').select2({
+							placeholder: "Move 3"
+						});
+						$('#move3').select2({
+							placeholder: "Move 4"
+						});
+						
+						
+						//set up all select values
+						var move0 = $('#move0');
+						$.each(moves, function(){
+							move0.append($('<option />').val(this.move).text(this.move));
+						});
+						var move1 = $('#move1');
+						$.each(moves, function(){
+							move1.append($('<option />').val(this.move).text(this.move));
+						});
+						var move2 = $('#move2');
+						$.each(moves, function(){
+							move2.append($('<option />').val(this.move).text(this.move));
+						});
+						var move3 = $('#move3');
+						$.each(moves, function(){
+							move3.append($('<option />').val(this.move).text(this.move));
+						});
+						
+						
+						$('#item').select2({
+							placeholder: "Item"
+						});
+						var itemSelect = $('#item');
+						
+						$.each(items, function(){
+							itemSelect.append($('<option />').val(this).text(this));
+						});
+						
+						$('#nature').select2({
+							placeholder: "Nature"
+						});
+						var natureSelect = $('#nature');
+						
+						$.each(natures, function(){
+							natureSelect.append($('<option />').val(this.name).text(this.name+" "+this.summary));
+						});
+						
+						$('#activeName').html(activePokemon.name);
+						$('#item').val(activePokemon.item);
+						$('#ability').val(activePokemon.ability);
+						$('#nature').val(activePokemon.nature);
+						
+						$('#move0').val(activePokemon.moves[0]);
+						$('#move1').val(activePokemon.moves[1]);
+						$('#move2').val(activePokemon.moves[2]);
+						$('#move3').val(activePokemon.moves[3]);
+						
+						$('#evHP').val(activePokemon.EVs[0]);
+						$('#evAtk').val(activePokemon.EVs[1]);
+						$('#evDef').val(activePokemon.EVs[2]);
+						$('#evSpA').val(activePokemon.EVs[3]);
+						$('#evSpD').val(activePokemon.EVs[4]);
+						$('#evSpeed').val(activePokemon.EVs[5]);
+						
+						$('#ivHP').val(activePokemon.IVs[0]);
+						$('#ivAtk').val(activePokemon.IVs[1]);
+						$('#ivDef').val(activePokemon.IVs[2]);
+						$('#ivSpA').val(activePokemon.IVs[3]);
+						$('#ivSpD').val(activePokemon.IVs[4]);
+						$('#ivSpeed').val(activePokemon.IVs[5]);
+						
+						
+					});
+				
+				}
+			});
+		</script>
+		{{/each}}
+		<button id="submitTeam" class="btn btn-primary">Submit Team</button>
+		<script>
+		
+			$('#teamName').on({
+				'keyup change': function(){
+					team['teamName'] = $('#teamName').val();
+				}
+			});
+		
+			$('#submitTeam').on({
+				'click': function(){
+					//save current pokemon
+					$('#activePokemon').trigger('submit');
+					
+					if(team['teamName'].trim() == ''){
+						alert('Please provide a team name.');
+						return false;
+					}
+					
+					//check that teamName has been entered, at least 1 pokemon exists
+					//and that all pokemon are valid
+					notNull = _.filter(team, function(pokemon){
+						return pokemon.name != null;
+					});
+					
+					if(typeof notNull == 'undefined'){
+						alert('Please include at least one Pokemon.');
+						return false;
+					}
+					
+					isValid = _.filter(notNull, function(pokemon){
+						console.log(_.countBy(pokemon.moves));
+						numNullMoves = _.countBy(pokemon.moves)['null'];
+						if(typeof numNullMoves == 'undefined')
+							return pokemon.ability !== null && pokemon.nature != null
+						else
+							return pokemon.ability !== null && numNullMoves < 4 && pokemon.nature != null
+					});
+					
+					if(isValid.length < notNull.length){
+						alert('Please ensure each Pokemon has an ability, at least one move, and a nature.');
+						return false;
+					}
+					
+					validEVs = _.filter(isValid, function(pokemon){
+						var evSum = 0;
+						for(var i=0; i < pokemon.EVs.length; i++){
+							evSum += pokemon.EVs[i];
+						}
+						return evSum <= 510;
+					});
+					
+					if(validEVs.length < isValid.length){
+						alert('Please ensure each pokemon has no more than 510 total EVs.');
+						return false;
+					}
+					
+					$.ajax({
+						url: '/create',
+						data:{
+							team:team
+						},
+						type:'POST',
+						success: function(data, status) {
+							window.location.replace(data);
+						}
+					});
+					
+				}
+			});
+		
+		</script>
+	</div>
+	
+	<br/><br/>
+	<div id="activeDiv" hidden="true">
+		<form id="activePokemon">
+			<input type="hidden" name="key" id="currentKey">
+			<input type="hidden" name="name" >
+			<div id="createDiv">
+				<div class="imageDiv" id="activeImageDiv">
+					<img class="pokeImg" id="activePokemonImg" src="">
+					<h3 id='activeName'></h3>
+					<img class="typeImg" id="activeType1" src="">
+					<img class="typeImg" id="activeType2" src="">
+					<br/><br/>
+					<select name="ability" type="text" id="ability" placeholder="Ability" class="select2"></select>
+				</div>
+				<div id="moveDiv">
+					<select name="moves[0]" id="move0" placeholder="Move 1" class="select2"></select>
+					<br/>
+					<select name="moves[1]" id="move1" type="text" placeholder="Move 2" class="select2"></select>
+					<br/>
+					<select name="moves[2]" id="move2" type="text" placeholder="Move 3" class="select2"></select>
+					<br/>
+					<select name="moves[3]" id="move3" type="text" placeholder="Move 4" class="select2"></select>
+					<br/>
+					<select name="item" id="item" type="text" placeholder="Item" class="select2"></select>
+					<br/>
+					<select name="nature" id="nature" type="text" placeholder="Nature" class="select2"></select>
+				</div>
+				<div id="evDiv">
+					<div class="numBlock">
+						EVs: <label>HP: </label><input name="EVs[0]" id="evHP" type="number" placeholder="HP" min="0" max="252">
+					</div>
+					<div class="numBlock">
+						<label>Atk: </label><input name="EVs[1]" id="evAtk" type="number" placeholder="Atk" min="0" max="252">
+					</div>
+					<div class="numBlock">
+						<label>Def: </label><input name="EVs[2]" id="evDef" type="number" placeholder="Def" min="0" max="252">
+					</div>
+					<div class="numBlock">
+						<label>SpA: </label><input name="EVs[3]" id="evSpA" type="number" placeholder="SpA" min="0" max="252">
+					</div>
+					<div class="numBlock">
+						<label>SpD: </label><input name="EVs[4]" id="evSpD" type="number" placeholder="SpD" min="0" max="252">				
+					</div>
+					<div class="numBlock">
+						<label>Speed: </label><input name="EVs[5]" id="evSpeed" type="number" placeholder="Spe" min="0" max="252">
+					</div>
+				</div>
+				<div id="ivDiv">
+					<div class="numBlock">
+						IVs: <label>HP: </label><input name="IVs[0]" id="ivHP" type="number" placeholder="HP" min="0" max="31">
+					</div>
+					<div class="numBlock">
+						<label>Atk: </label><input name="IVs[1]" id="ivAtk" type="number" placeholder="Atk" min="0" max="31">
+					</div>
+					<div class="numBlock">
+						<label>Def: </label><input name="IVs[2]" id="ivDef" type="number" placeholder="Def" min="0" max="31">
+					</div>
+					<div class="numBlock">
+						<label>SpA: </label><input name="IVs[3]" id="ivSpA" type="number" placeholder="SpA" min="0" max="31">
+					</div>
+					<div class="numBlock">
+						<label>SpD: </label><input name="IVs[4]" id="ivSpD" type="number" placeholder="SpD" min="0" max="31">				
+					</div>
+					<div class="numBlock">
+						<label>Speed: </label><input name="IVs[5]" id="ivSpeed" type="number" placeholder="Spe" min="0" max="31">
+					</div>
+				</div>
+				<!--<button>Save</button>-->
+			</div>
+		</form>
+		
+		<script>
+		
+			$('#activePokemon').submit(function(){
+				
+				if(activePokemon == null){
+					alert('Please add at least one Pokemon.');
+					return false;
+				}
+				
+				//updates the value of team
+				
+				//update the fields in the json from form
+				activePokemon['ability'] = $('#ability').val();
+				activePokemon['moves'][0] = $('#move0').val();
+				activePokemon['moves'][1] = $('#move1').val();
+				activePokemon['moves'][2] = $('#move2').val();
+				activePokemon['moves'][3] = $('#move3').val();
+				activePokemon['item'] = $('#item').val();
+				activePokemon['nature'] = $('#nature').val();
+				
+				activePokemon['EVs'][0] = parseInt($('#evHP').val());
+				activePokemon['EVs'][1] = parseInt($('#evAtk').val());
+				activePokemon['EVs'][2] = parseInt($('#evDef').val());
+				activePokemon['EVs'][3] = parseInt($('#evSpA').val());
+				activePokemon['EVs'][4] = parseInt($('#evSpD').val());
+				activePokemon['EVs'][5] = parseInt($('#evSpeed').val());
+				
+				activePokemon['IVs'][0] = parseInt($('#ivHP').val());
+				activePokemon['IVs'][1] = parseInt($('#ivAtk').val());
+				activePokemon['IVs'][2] = parseInt($('#ivDef').val());
+				activePokemon['IVs'][3] = parseInt($('#ivSpA').val());
+				activePokemon['IVs'][4] = parseInt($('#ivSpD').val());
+				activePokemon['IVs'][5] = parseInt($('#ivSpeed').val());
+			
+				for(var i=0; i<=5; i++){
+					if(isNaN(activePokemon['IVs'][i]))
+						activePokemon['IVs'][i] = 0;
+					if(isNaN(activePokemon['EVs'][i]))
+						activePokemon['EVs'][i] = 0;
+				}
+			
+				team[$('#currentKey').val()] = activePokemon;
+				
+				$.ajax({
+					url: '/save',
+					data:{
+						team:team
+					},
+					type:'POST',
+					success: function(data, status) {console.log(data)}
+				});
+				
+				//display something saying you saved
+				
+				return false; //prevents redirect on submit
+			});
+			
+			//prevent form submit on Enter keypress
+			$('#activePokemon').on('keyup keypress', function(e) {
+			  var keyCode = e.keyCode || e.which;
+			  if (keyCode === 13) { 
+				e.preventDefault();
+				return false;
+			  }
+			});
+			
+			$(document).ready(function() {
+			  $(".select2").select2();
+			  
+			  {{#each numbers}}
+				$('#pokemon{{this}}Name').select2({
+					placeholder: "Pokemon #{{this}}",
+					data:pokemonList
+				});
+			  {{/each}}
+			});
+		</script>
+	</div>
+</div>

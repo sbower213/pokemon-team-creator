@@ -1,0 +1,117 @@
+#navbar{
+	text-align:center;
+}
+
+#navbar li{
+	display:inline;
+	margin-right: 15px;
+}
+
+#frontPageSearch{
+	text-align:center;
+}
+
+.select2 {
+	width:200px;
+}
+
+.imageDiv{
+	display: inline-block;
+}
+
+.pokeImg{
+	display: block;
+	margin: auto;
+	max-width: 180px;
+}
+
+.pokeImg:hover {
+	cursor:pointer
+}
+
+.typeImg{
+	display:inline-block;
+	vertical-align: initial;
+}
+
+#activeImageDiv {
+    float: left;
+    margin-right: 25px;
+}
+
+#moveDiv{
+	display: inline-grid;
+    margin-right: 25px;
+}
+
+#evDiv{
+	display: inline-grid;
+    margin-right: 25px;
+}
+
+#ivDiv{
+	display: inline-grid;
+    margin-right: 25px;
+}
+
+label{
+	margin-right:5px;
+}
+
+.numBlock{
+	text-align:right;
+	margin-bottom:20px;
+}
+
+#activeName{
+	display:inline;
+	margin-right:10px;
+}
+
+.mainPageTeam{
+	border-radius: 10px;
+	margin-bottom: 20px;
+	text-align:center;
+	position: relative;
+	background: rgba(0,0,0,.25);
+}
+
+.upvoteDiv{
+	position:absolute;
+	top: 15px;
+	right: 30px;
+}
+
+.voteButton{
+	height: 20px;
+	cursor: pointer;
+}
+
+.mainPageImageDiv{
+	text-align:center;
+	position: relative;
+	width: 120px;
+	margin: 0 auto;
+}
+
+.toggleButton{
+	margin-bottom: 15px;
+}
+
+.frontPagePokemon{
+	width:120px;
+}
+
+#header{
+	text-align:center;
+}
+
+#submitTeam{
+	margin-top:5px;
+}
+
+body{
+	background: linear-gradient(180deg, #8ed6ff 0%, #718bff 100%);
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}

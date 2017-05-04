@@ -1,0 +1,141 @@
+<div id="frontPageSearch">
+	<input type='text' id='searchBar' placeholder='Search by team name...'>
+	<br/></br>
+	<h2 id="noMatches" hidden="true">No matches found.</h2>
+	<script>
+		var teamsArr = [];
+		{{#each teams}}
+			teamsArr.push({
+				'_id':'{{this._id}}',
+				'name':'{{this.name}}'
+			});
+		{{/each}}
+		
+		
+		$('#searchBar').on('keyup', function(e) {
+			var searchString = $('#searchBar').val();
+			var notMatches = _.filter(teamsArr, function(team){
+				return !team.name.toLowerCase().includes(searchString.toLowerCase());
+			});
+			
+			console.log(notMatches);
+			
+			var matches = _.filter(teamsArr, function(team){
+				return team.name.toLowerCase().includes(searchString.toLowerCase());
+			});
+			
+			console.log(matches);
+			
+			for(var toRemove in notMatches){
+				$('#'+notMatches[toRemove]._id).attr('hidden', 'true');
+			}
+			
+			for(var toShow in matches){
+				$('#'+matches[toShow]._id).removeAttr('hidden');
+			}
+			
+			if(matches.length == 0){
+				$('#noMatches').removeAttr('hidden');
+			} else {
+				$('#noMatches').attr('hidden', 'true');
+			}
+		});
+	</script>
+</div>
+<div id="teamsContainer">
+	{{#each teams}}
+		<div id="{{this._id}}" class="team mainPageTeam container">
+			<div class="upvoteDiv">
+				<img src="/sprites/vote/upvote.png" class="voteButton" id="{{this._id}}_upvote">
+				<h4 id='{{this._id}}_votes'>{{this.upvotes}}</h4>
+				<img src="/sprites/vote/downvote.png" class="voteButton" id="{{this._id}}_downvote">
+			</div>
+			<h2>{{this.name}}</h2>
+			{{#each this.pokemon}}
+				{{#if this.name}}
+				<div class="imageDiv mainPageImageDiv">
+					<img class="frontPagePokemon" src="/sprites/{{this.national_id}}.png">
+					<h4>{{this.name}}</h4>
+					<hr>
+					{{#each this.moves}}
+						{{#if this}}
+							<p>{{this}}</p>
+						{{/if}}
+					{{/each}}
+					<hr>
+					<p>{{this.ability}}</p>
+					<p>{{this.item}}</p>
+					<p>{{this.nature}}</p>
+				</div>
+				{{/if}}
+			{{/each}}
+			<div id="{{this._id}}_advanced" class="collapse">
+			<hr>
+				{{#each this.pokemon}}
+					{{#if this.name}}
+					<div class="imageDiv mainPageImageDiv evDiv">
+						<!-- do this with tables? -->
+						<p><b>EVs / IVs</b></p>	
+						<p><b>HP: </b>{{this.EVs.[0]}} / {{this.IVs.[0]}}</p>
+						<p><b>Atk: </b>{{this.EVs.[1]}} / {{this.IVs.[1]}}</p>
+						<p><b>Def: </b>{{this.EVs.[2]}} / {{this.IVs.[2]}}</p>
+						<p><b>SpA: </b>{{this.EVs.[3]}} / {{this.IVs.[3]}}</p>
+						<p><b>SpD: </b>{{this.EVs.[4]}} / {{this.IVs.[4]}}</p>
+						<p><b>Spe: </b>{{this.EVs.[5]}} / {{this.IVs.[5]}}</p>
+					</div>
+					{{/if}}
+				{{/each}}
+			</div>
+			<br/>
+			<button class="btn btn-primary toggleButton" data-toggle="collapse" data-target="#{{this._id}}_advanced">Advanced</button>
+			<br/>
+		</div>
+		<script>
+			$('#{{this._id}}_upvote').on({
+				'click': function(){
+					$.ajax({
+						url: '/vote',
+						data:{
+							'id':'{{this._id}}',
+							'change':'1'
+						},
+						type:'POST',
+						success: function(data, status) {
+							$('#{{this._id}}_votes').html(data.upvotes);
+							
+							//preliminary stuff for only voting once per page
+							$('#{{this._id}}_upvote').hide();
+							if(! $('#{{this._id}}_downvote').is(':visible')){
+								$('#{{this._id}}_upvote').show();
+								$('#{{this._id}}_downvote').show();
+							}
+						}
+					});
+				}
+			});
+			
+			$('#{{this._id}}_downvote').on({
+				'click': function(){
+					$.ajax({
+						url: '/vote',
+						data:{
+							'id':'{{this._id}}',
+							'change':'-1'
+						},
+						type:'POST',
+						success: function(data, status) {
+							$('#{{this._id}}_votes').html(data.upvotes);
+							
+							//preliminary stuff for only voting once per page
+							$('#{{this._id}}_downvote').hide();
+							if(! $('#{{this._id}}_upvote').is(':visible')){
+								$('#{{this._id}}_downvote').show();
+								$('#{{this._id}}_upvote').show();
+							}
+						}
+					});
+				}
+			});
+		</script>
+	{{/each}}
+</div>
